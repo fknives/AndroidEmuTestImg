@@ -1,0 +1,105 @@
+#!/bin/bash
+
+if [[ "$1" == "--help" ]]
+then
+  echo "Creates default emulator and starts it."
+  echo "API level and Target can be customized, for more customization use the avdmanager directly!"
+  echo "API_level is read from EMULATOR_API_LEVEL variable"
+  echo "target is read from EMULATOR_TARGET variable or defaults to target"
+  echo "--buildOnly parameter means the emulator will be created, but not started"
+  exit 0;
+fi
+
+if [[ -z $EMULATOR_API_LEVEL ]]
+then
+  echo "EMULATOR_API_LEVEL not set!" >&2
+  exit 1;
+fi
+
+if [[ -z $EMULATOR_TARGET ]]
+then
+  if [[ $EMULATOR_API_LEVEL -ge 32 ]]
+  then
+    echo "EMULATOR_TARGET not set using \"google_apis\", \"default\" doesn't exists above 32"
+    EMULATOR_TARGET="google_apis"
+  else
+    echo "EMULATOR_TARGET not set using \"default\"" >&2
+    EMULATOR_TARGET="default"
+  fi
+fi
+
+if [[ -z $AVD_HOME ]]
+then
+  AVD_HOME="$HOME/.android/avd"
+  echo "AVD_HOME not set, using fallback: $AVD_HOME"
+fi
+
+if [[ "$1" == "--buildOnly" ]]
+then
+  echo "INFO: --buildOnly found, emulator will be created but not started!" >&2
+fi
+
+echo "INFO: installing sdk" >&2
+sdkmanager --install "system-images;android-$EMULATOR_API_LEVEL;$EMULATOR_TARGET;x86_64" --channel=0 > /dev/null 2> /dev/null
+
+
+echo "INFO: creating emulator" >&2
+EMULATOR_NAME="test_$EMULATOR_API_LEVEL"
+echo "no" | avdmanager create avd -n "$EMULATOR_NAME" --abi "$EMULATOR_TARGET/x86_64" --package "system-images;android-$EMULATOR_API_LEVEL;$EMULATOR_TARGET;x86_64"
+
+echo "INFO: config of emulator:" >&2
+cat $AVD_HOME/$EMULATOR_NAME.avd/config.ini >&2
+echo "INFO: modifying config of emulator..." >&2
+echo 'disk.dataPartition.size=2G\n' >> $AVD_HOME/$EMULATOR_NAME.avd/config.ini
+
+if [[ "$1" == "--buildOnly" ]]
+then
+  echo "INFO: emulator created!" >&2
+  exit 0;
+fi
+
+echo "INFO: checking devices, expecting nothing..." >&2
+adb devices
+
+echo "INFO: starting emulator..." >&2
+emulator -avd $EMULATOR_NAME -no-snapshot-save -no-window -gpu off -noaudio -no-boot-anim -camera-back none > emulator.log &
+
+echo "INFO: waiting for emulator..." >&2
+sleep 30s
+
+echo "INFO: emulator logs" >&2
+cat emulator.log
+
+echo "INFO: checking devices..." >&2
+adb devices
+echo "INFO: waiting for emulator to be booted..." >&2
+BOOT_WAIT_LOG_MESSAGE="INFO: still waiting for emulator to boot"
+SECONDS_PASSED=0;
+BOOT_COMPLETE=`adb shell getprop sys.boot_completed`
+while [[ -z $BOOT_COMPLETE ]];
+do
+  sleep $BOOT_DELAY_IN_SECONDS;
+  SECONDS_PASSED=$(( $SECONDS_PASSED+$BOOT_DELAY_IN_SECONDS ));
+  echo "INFO: still waiting for emulator to boot ($SECONDS_PASSED seconds passed)"; >&2
+  BOOT_COMPLETE=`adb shell getprop sys.boot_completed`
+done;
+echo "INFO: emulator booted." >&2
+# alternative: https://raw.githubusercontent.com/travis-ci/travis-cookbooks/0f497eb71291b52a703143c5cd63a217c8766dc9/community-cookbooks/android-sdk/files/default/android-wait-for-emulator
+
+echo "INFO: clearing animations..." >&2
+adb shell settings put global window_animation_scale 0.0
+adb shell settings put global transition_animation_scale 0.0
+adb shell settings put global animator_duration_scale 0.0
+
+echo "INFO: waiting for emulator have sdk property..." >&2
+SDK_VERSION=`adb shell getprop ro.build.version.sdk`
+while [[ -z $SDK_VERSION ]];
+do
+  sleep $BOOT_DELAY_IN_SECONDS;
+  echo "INFO: still waiting for emulator to have SDK property"; >&2
+  SDK_VERSION=`adb shell getprop ro.build.version.sdk`
+done;
+
+echo "INFO: unlocking screen..." >&2
+adb shell input keyevent 82
+echo "INFO: emulator ready!" >&2

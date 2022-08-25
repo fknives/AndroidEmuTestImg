@@ -1,0 +1,11 @@
+buildTools = ["33.0.0", "32.0.0"]
+sdks = [30, 31]
+androidCommandlineTools = "8512546_latest"
+gradleVersion = "7.3.3"
+output = "outputs"
+[variations]
+apiLevels = [22, 30]
+[image]
+repository = "fknives2"
+namespace = "android-test-img-multi"
+tagPrefix = "1.0.1"

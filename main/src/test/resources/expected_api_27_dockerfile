@@ -1,0 +1,8 @@
+FROM fknives/ati:1.0
+# Generated on 2021-11-15
+
+ENV EMULATOR_API_LEVEL 27
+
+RUN /usr/local/bin/androidemulatorstart --buildOnly
+
+CMD ["/bin/bash"]

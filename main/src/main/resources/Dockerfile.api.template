@@ -1,0 +1,8 @@
+FROM {{IMG-TAG}}
+# {{GENERATED_AT}}
+
+ENV EMULATOR_API_LEVEL {{API_LEVEL}}
+
+RUN /usr/local/bin/androidemulatorstart --buildOnly
+
+CMD ["/bin/bash"]

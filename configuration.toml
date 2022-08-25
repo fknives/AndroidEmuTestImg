@@ -1,0 +1,25 @@
+# UPDATE: build tools versions can be found via sdkmanager --list and filtering it. Example: `sdkmanager --list | grep -o "build-tools;[0-9.][0-9.]*" | sort | uniq`
+# build tools installed into every image
+buildTools = ["33.0.0", "32.0.0", "31.0.0", "30.0.3", "30.0.2"]
+# UPDATE: sdk versions can be found via sdkmanager --list and filtering it. Example: `sdkmanager --list | grep -o "android-[0-9.][0-9.]*" | sort | uniq`
+# sdks installed into every image
+sdks = [30, 31, 32, 33]
+# UPDATE: latest command lines version here: https://developer.android.com/studio#command-tools
+androidCommandlineTools = "8512546_latest"
+# UPDATE: gradle version can be found in projects gradle-wrapper.properties
+gradleVersion = "7.3.3"
+# folder to save generated images into
+output = "outputs-1.0.0"
+
+# additional variations
+[variations]
+# apiLevel variation create separate image with emulator sdk installed and emulator created
+apiLevels = []
+
+# the docker image description
+# <repository>/<namespace>:<tagPrefix><variationtag>
+# Example: fknives/android-test-img:1.0.0, fknives/android-test-img:1.0.0-api-21
+[image]
+repository = "fknives"
+namespace = "android-test-img"
+tagPrefix = "1.0.0"
